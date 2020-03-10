@@ -1,24 +1,24 @@
-from config import DB_NAME
+from config import DB_NAME, MAX_IP
 import sqlite3
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Db:
-    def __main__(self):
+    def __init__(self):
+        self.cursor = self.create_db_connection()
         if not os.path.exists(DB_NAME):
-            self.cursor = self.create_db_connection()
             self.create_table()
-        else:
-            self.cursor = self.create_db_connection()
 
 
     def create_db_connection(self):
         """ create a database connection to a SQLite database """
         try:
-            conn = sqlite3.connect(self.db_file)
-            cursor = self.conn.cursor()
+            conn = sqlite3.connect(DB_NAME)
         except Exception as e:
             logger.error(e)
-        return cursor
+        self.cursor = conn.cursor()
 
     def create_table(self):
         create_table = """ 
@@ -55,3 +55,25 @@ class Db:
             logger.debug("proxy {0} deleted ".format(ipPort))
         except Exception as e:
             logger.error(e)
+
+    def tot_rows(self):
+        tot_rows = """
+                      SELECT COUNT(*)
+                      FROM proxies
+                      """
+        try:
+            rows = self.cursor.execute(tot_rows).fetchall()
+        except Exception as e:
+            logger.error(e)
+        return rows[0][0]
+
+    def select_proxy(self):
+        select_proxy = """
+                          SELECT ipPort FROM proxies
+                          ORDER BY random() limit 1 
+                           """
+        try:
+            self.cursor.execute(select_proxy)
+        except Exception as e:
+            logger.error(e)
+        return self.cursor.fetchone()[0]

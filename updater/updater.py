@@ -1,7 +1,13 @@
 import requests
 from config import LINK_TO_BE_CHECKED, USER_AGENT
 import random
-class Updater:
+
+
+class Inserter:
+    def __init__(self):
+        pass
+
+
 
     def new_proxy(self, link):
         try:
@@ -14,6 +20,8 @@ class Updater:
             logger.debug('ipPort in json')
         return proxyjson['ipPort']
 
+
+class Tester:
     def check_proxy(self, ipPort):
         proxyDict = {
             "http": ipPort,
