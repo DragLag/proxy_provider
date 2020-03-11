@@ -1,30 +1,34 @@
-from config import DB_NAME, MAX_IP
 import sqlite3
 import os
 import logging
 
+
+logging.basicConfig(filename='proxy_provider.log',
+                    level=logging.INFO,
+                    format='%(asctime)s %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p')
 logger = logging.getLogger(__name__)
 
 class Db:
-    def __init__(self):
-        self.cursor = self.create_db_connection()
-        if not os.path.exists(DB_NAME):
+    def __init__(self, config):
+        self.cursor = self.create_db_connection(config.DB_NAME)
+        if not os.path.exists(config.DB_NAME):
             self.create_table()
 
 
-    def create_db_connection(self):
+    def create_db_connection(self, DB_NAME):
         """ create a database connection to a SQLite database """
         try:
             conn = sqlite3.connect(DB_NAME)
         except Exception as e:
             logger.error(e)
-        self.cursor = conn.cursor()
+        return conn.cursor()
 
     def create_table(self):
         create_table = """ 
                        CREATE TABLE IF NOT EXISTS proxies (
                        id integer PRIMARY KEY,
-                       ipPort text NOT NULL,
+                       ipPort text NOT NULL
                        );
                         """
         try:
@@ -35,11 +39,11 @@ class Db:
     def insert_row(self, ipPort):
         insert_proxy = """
                           INSERT INTO proxies(ipPort)
-                          VALUES( ?,  ?);
+                          VALUES(?);
                            """
         try:
-            self.cursor.execute(insert_proxy, (ipPort))
-            logger.debug("proxy {0} inserted in db ".format(self.address['ipPort']))
+            self.cursor.execute(insert_proxy, (ipPort,))
+            logger.debug("proxy {0} inserted in db ".format(ipPort))
         except Exception as e:
             logger.error(e)
 
@@ -51,7 +55,7 @@ class Db:
                        WHERE ipPort = ?
                        """
         try:
-            self.cursor.execute(delete_row, (ipPort))
+            self.cursor.execute(delete_row, (ipPort,))
             logger.debug("proxy {0} deleted ".format(ipPort))
         except Exception as e:
             logger.error(e)
@@ -62,10 +66,10 @@ class Db:
                       FROM proxies
                       """
         try:
-            rows = self.cursor.execute(tot_rows).fetchall()
+            rows = self.cursor.execute(tot_rows).fetchone()
         except Exception as e:
             logger.error(e)
-        return rows[0][0]
+        return rows[0]
 
     def select_proxy(self):
         select_proxy = """
@@ -74,6 +78,8 @@ class Db:
                            """
         try:
             self.cursor.execute(select_proxy)
+            proxy = self.cursor.fetchone()[0]
         except Exception as e:
             logger.error(e)
-        return self.cursor.fetchone()[0]
+            return False
+        return proxy
